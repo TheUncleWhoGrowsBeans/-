@@ -155,119 +155,130 @@
 ## parse_url(string urlString, string partToExtract [, string keyToExtract])
 * 返回结果: 解析url（partToExtract包括HOST, PATH, QUERY, REF, PROTOCOL, AUTHORITY, FILE, 以及USERINFO）
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select parse_url('https://github.com/TheUncleWhoGrowsBeans/Melon-and-fruit-fields', 'HOST');```  -- 结果为 github.com
+* ```select parse_url('https://github.com/TheUncleWhoGrowsBeans/Melon-and-fruit-fields', 'PATH');```  -- 结果为 /TheUncleWhoGrowsBeans/Melon-and-fruit-fields
+* ```select parse_url('http://hostname.com/path?k1=v1&k2=v2#ref1', 'REF');```  -- 结果为 ref1
+* ```select parse_url('http://hostname.com/path?k1=v1&k2=v2#ref1', 'QUERY', 'k2');```  -- 结果为 v2
 
 ## printf(String format, Obj... args)
-* 返回结果: 返回1231233213
+* 返回结果: 返回printf-style的字符串
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select printf('%s%d岁了', 'Uncle Bean', 1);```  -- 结果为 Uncle Bean1岁了
 
 ## quote(String text)
-* 返回结果: 返回1231233213
+* 返回结果: 返回带引号的字符串
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select quote('Uncle Bean');```  -- 结果为 'Uncle Bean'
 
 ## regexp_extract(string subject, string pattern, int index)
-* 返回结果: 返回1231233213
+* 返回结果: 正则提取
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select regexp_extract('http://hostname.com/path?k1=v1&k2=v2#ref1', 'http://([0-9a-zA-z]+.[0-9a-zA-z]+)/', 1);```  -- 结果为 hostname.com
 
 ## regexp_replace(string INITIAL_STRING, string PATTERN, string REPLACEMENT)
-* 返回结果: 返回1231233213
+* 返回结果: 正则替换
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select regexp_replace('我1不23要456数7890字', '[0-9]+', '');```  -- 结果为 我不要数字
 
 ## repeat(string str, int n)
-* 返回结果: 返回1231233213
+* 返回结果: 返回重复n次str后的字符串
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select repeat('a', 3);```  -- 结果为 aaa
 
 ## replace(string A, string OLD, string NEW)
-* 返回结果: 返回1231233213
+* 返回结果: 替换
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select replace('123123', '123', 'haha');```  -- 结果为 hahahaha
 
 ## reverse(string A)
-* 返回结果: 返回1231233213
+* 返回结果: 反转字符串A
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select reverse('1234');```  -- 结果为 4321
 
 ## rpad(string str, int len, string pad)
-* 返回结果: 返回1231233213
+* 返回结果: 使用pad填充字符串str的右边，使其长度变为len；如果字符串str的长度大于len，则str将被截断；如果pad为空字符或者NULL，则返回NULL
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select rpad('123', 5, '0');```  -- 结果为 12300
+* ```select rpad('123', 2, '0');```  -- 结果为 12
+* ```select rpad('123', 5, '');```  -- 结果为 NULL
 
 ## rtrim(string A)
-* 返回结果: 返回1231233213
+* 返回结果: 去掉字符串A右边的空格
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select rtrim('1 123 ');```  -- 结果为 1 123
 
 ## sentences(string str, string lang, string locale)
-* 返回结果: 返回1231233213
+* 返回结果: 将自然语言文本串标记为单词和句子（分词）
 * 返回类型: array<array<string>>
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select sentences('Hello Bean! How are you?');```  -- 结果为 [["Hello","Bean"],["How","are","you"]]
 
 ## space(int n)
-* 返回结果: 返回1231233213
+* 返回结果: 返回n个空格的字符串
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select concat('->', space(3), '<-');```  -- 结果为 ->   <-
 
 ## split(string str, string pat)
-* 返回结果: 返回1231233213
+* 返回结果: 使用指定分隔符pat拆分字符串str
 * 返回类型: array
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select split('123123', '2');```  -- 结果为 ["1","31","3"]
+* ```select split('123123', '12');```  -- 结果为 ["","3","3"]
 
 ## str_to_map(text[, delimiter1, delimiter2])
-* 返回结果: 返回1231233213
+* 返回结果: 将字符串转换为map
 * 返回类型: map<string,string>
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select str_to_map('k1:v1,k2:v2');```  -- 结果为 {"k1":"v1","k2":"v2"}
 
 ## substr(string|binary A, int start) substring(string|binary A, int start)
-* 返回结果: 返回1231233213
-* 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* 返回结果: 截取字符串
+* 返回类型: substr
+* ```select substr('12345', 2);```  -- 结果为 2345
+* ```select substring('12345', 2);```  -- 结果为 2345
 
 ## substr(string|binary A, int start, int len) substring(string|binary A, int start, int len)
-* 返回结果: 返回1231233213
+* 返回结果: 截取字符串
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select substr('12345', 2, 3);```  -- 结果为 234
+* ```select substring('12345', 2, 3);```  -- 结果为 234
 
 ## substring_index(string A, string delim, int count)
-* 返回结果: 返回1231233213
+* 返回结果: 根据delim将字符串A分为多个部分，然后根据count返回部分字符串
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select substring_index('1.2.3', '.', 2);```  -- 结果为 1.2
+* ```select substring_index('1.2.3', '.', -2);```  -- 结果为 2.3
 
 ## translate(string|char|varchar input, string|char|varchar from, string|char|varchar to)
-* 返回结果: 返回1231233213
+* 返回结果: 将出现在from中的每个字符替换为to中的相应字符；若from比to长，那么在from中比to中多出的字符将会被删除
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select translate('abc不是ab', 'abc', 'd');```  -- 结果为 d不是d
+* ```select translate('abc不是a,也不是b,也不是c', 'abc', 'd');```  -- 结果为 d不是d,也不是,也不是
 
 ## trim(string A)
-* 返回结果: 返回1231233213
+* 返回结果: 去掉字符串A左右两边的空格
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select concat('->', trim(' 1 1 '), '<-');```  -- 结果为 ->1 1<-
 
 ## unbase64(string str)
-* 返回结果: 返回1231233213
+* 返回结果: base64解码
 * 返回类型: binary
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select unbase64('VW5jbGUgQmVhbg==');```  -- 结果为 Uncle Bean
 
 ## upper(string A) ucase(string A)
-* 返回结果: 返回1231233213
+* 返回结果: 返回大写的字符串A
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select upper('aa');```  -- 结果为 AA
+* ```select ucase('aa');```  -- 结果为 AA
 
 ## initcap(string A)
-* 返回结果: 返回1231233213
+* 返回结果: 转换为首字母大写的字符串A
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select initcap('the uncle who grows beans');```  -- 结果为 The Uncle Who Grows Beans
 
 ## levenshtein(string A, string B)
-* 返回结果: 返回1231233213
+* 返回结果: 返回两个字符串之间的Levenshtein距离(也称编辑距离，指的是两个字符串之间，由一个转换成另一个所需的最少编辑操作次数)
 * 返回类型: int
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select levenshtein('hehe', 'haha');```  -- 结果为 2
 
 ## soundex(string A)
-* 返回结果: 返回1231233213
+* 返回结果: 返回字符串的soundex代码
 * 返回类型: string
-* ```select 123123123('123123');```  -- 结果为 123123132
+* ```select soundex('Uncle Bean');```  -- 结果为 U524
