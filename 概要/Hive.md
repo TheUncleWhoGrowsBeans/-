@@ -2,8 +2,8 @@
  * @Author              : Uncle Bean
  * @Date                : 2020-05-23 23:06:47
  * @LastEditors         : Uncle Bean
- * @LastEditTime        : 2020-05-25 20:22:15
- * @FilePath            : \面试\Hive.md
+ * @LastEditTime        : 2020-06-15 10:53:26
+ * @FilePath            : \概要\Hive.md
  * @Description         : 
 --> 
 
@@ -30,13 +30,27 @@
 
 # 三、map和reduce个数
 
-* map个数：finalSplitSize = totalSize / max(minSize,min(totalSize/numSplits,blockSize))
-    * 可通过设置 mapred.map.tasks 来调整map个数（前提是totalSize/numSplits < blockSize）
+## 3.1 map个数
+  
+由分片大小决定，单个文件大小 / 分片大小 > 1.1 则拆分出 split，如果剩余文件大小 / 分片大小 > 1.1 则继续拆分
 
-* reduce个数：默认情况下由 hive.exec.reducers.bytes.per.reducer（每个reduce任务处理的数据量，默认为1000^3=1G） 和 hive.exec.reducers.max（每个任务最大的reduce数，默认为999）所决定（reduce个数 = min(参数2，总输入数据量/参数1）
-    * 可通过 set hive.exec.reducers.bytes.per.reducer=number 来调整每个reducer的负载，从而间接影响reducer个数
-    * 可通过 set hive.exec.reducers.max=number 来限制reducer的最大个数
-    * 可通过 set mapreduce.job.reduces=number 直接设置reducer的个数
+splitSize（分片大小） = max(minSize, min(goalSize, dfs.block.size))
+
+minSize = max(mapred.min.split.size, minSplitSize（随着File Format的不同而不同）)
+
+goalSize = totalSize（Map需要读取数据的总大小） / mapred.map.tasks
+    
+* 可通过设置 mapred.map.tasks 来调整map个数（前提是 totalSize / mapred.map.tasks < dfs.block.size）
+* 可以通过调小 mapred.max.split.size 的值来增加 mapper 数量
+* 可以通过调大 mapred.max.split.size（每个Mapper最大输入大小）、mapred.min.split.size.per.node（一个节点上split至少的大小） 和 mapred.min.split.size.per.rack（一个交换机下split至少的大小） 以及设置 hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat 来减少 mapper 数量
+
+## 3.2 reduce个数
+
+默认情况下由 hive.exec.reducers.bytes.per.reducer（每个reduce任务处理的数据量，默认为1000^3=1G） 和 hive.exec.reducers.max（每个任务最大的reduce数，默认为999）所决定（reduce个数 = min(参数2，总输入数据量/参数1）
+
+* 可通过 set hive.exec.reducers.bytes.per.reducer=number 来调整每个reducer的负载，从而间接影响reducer个数
+* 可通过 set hive.exec.reducers.max=number 来限制reducer的最大个数
+* 可通过 set mapreduce.job.reduces=number 直接设置reducer的个数
 
 # 四、Hive执行优化
 
@@ -84,8 +98,10 @@ WHERE date_key = 20200520
 GROUP BY user_id
 ```
         
+### 4.1.2、count distinct 优化
 
-
+* 利用 distribute by sort by 优化多层次单指标的 count distinct
+* 利用 group by 和 case when 优化单层次多指标的 count distinct
 
 ## 参数层面
 
@@ -113,41 +129,23 @@ GROUP BY user_id
 
         大大表关联可通过切分成热点数据和非热点数据来分别出来，思路是改写sql，间接的转换成大小表关联，利用map join的特点解决倾斜问题
 
+* 关联字段的类型隐式转换引起的 reducer 倾斜，如将 String 类型字段隐式转换为 Double 类型，导致非数值型字符串都被分区到同一个 reducer 上，造成数据倾斜；手动将另外一个关联字段转换为 String 再进行关联即可
+
 ## 5.3、Reduce倾斜
 
-* 由多个count distinct（multi distinct）引起的数据倾斜
+* group by 倾斜
 
-        通过改写为group by + case when + count的方式来解决
+    尽管开启了 hive.map.aggr，在 map 阶段已经做了 combine 操作。但由于 key 的分布不均匀，导致数据倾斜，致使 reduce 阶段某个 reducer 处理了大量数据；
 
-* 使用skewjoin参数
+    此种场景，可考虑开启 hive.groupby.skewindata，当选项设定为true时，会用两个 job 来处理数据；
 
-        set hive.optimize.skewjoin = true;
+    第 1 个 job，Map的输出结果集合会随机分布到 Reducer 中，每个 Reducer 做部分聚合操作，并输出结果；
 
-        set hive.skewjoin.key = skew_key_threshold （default = 100000）
+    第 2 个 job，将前面的结果按照 key 分布到 Reducer 中，完成最终的聚合操作。
 
-        hive在运行的时候没有办法判断哪个key会产生多大的倾斜，所以使用这个参数控制倾斜的阀值
-        如果超过这个值，新的值会发送给那些还没有达到的reduce，
-        一般可以设置成你处理的总记录数/reduce个数的2-4倍都可以接受。
+    但是，hive.groupby.skewindata 对 count distinct 并不是很有效，因为相同 key 的数据最终还是需要到同一个 reducer 中进行排重计数；
 
-        倾斜是经常会存在的，一般select的层数超过2层，翻译成执行计划多余3个以上的mapreduce job都会很容易产生倾斜，
-        建议每次运行比较复杂的sql之前都可以设一下这个参数，
-        如果你不知道设置多少，可以就按官方默认的1个reduce只处理1G的算法，
-        那么 skew_key_threshold  = 1G/平均行长. 
-        或者默认直接设成250000000 (差不多算平均行长4个字节)）
-
-* 使用groupby.skewindata参数
-
-        hive.map.aggr=true (默认true)这个配置项代表是否在map端进行聚合，相当于Combiner。
-
-        hive.groupby.skewindata=true (默认false)
-
-        有数据倾斜的时候进行负载均衡，当选项设定为true，生成的查询计划会有两个MR Job。
-        第一个MR Job中，Map的输出结果集合会随机分布到Reduce中，
-        每个Reduce做部分聚合操作，并输出结果，
-        这样处理的结果是相同的group by key有可能被分发到不同的Reduce中，从而达到负载均衡的目的；
-        第二个MR Job再根据预处理的数据结果按照group by key分布到Reduce中
-        这个过程可以保证相同的group by key被分布到同一个Reduce中，
-        最后完成最终的聚合操作。
+    此种场景，可考虑将热点 key 单独拿出来进行计算，同时将 count distinct 改写为先 group by 后 count 的逻辑。
 
 # 六、Hive Stage划分
 
