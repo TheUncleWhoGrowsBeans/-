@@ -2,7 +2,7 @@
  * @Author              : Uncle Bean
  * @Date                : 2020-04-27 11:16:28
  * @LastEditors         : Uncle Bean
- * @LastEditTime        : 2020-06-02 23:16:07
+ * @LastEditTime        : 2020-08-23 19:57:21
  * @FilePath            : \DW\数据治理\数据标准\技术标准\ETL规范.md
  * @Description         : 
  -->
@@ -32,6 +32,10 @@
 * 避免 SQL 逻辑重复使用，相同的逻辑可以将结果存储到临时表，通过临时表来复用
 
 * 尽可能使用 Hive SQL 自带的高级命令操作（Hive本身会针对这些命令做优化，如 cube）
+
+* NULL值处理：一般情况下字符型处理为空、数值型处理为0
+
+* 禁止隐式转换
 
 ## 1.2、过滤
 
@@ -75,3 +79,9 @@
 * 使用 left semi join 替代 inner join，前提是除了关联字段，没有用到其他副表的字段；使用 left semi join，即使右表存在重复的 key 指，也不会造成关联结果的重复，因为右表的 key 在 Map 阶段已经经过 Group By 去重；Hive 中 IN/EXISTS 用法等同于 left semi join（通过 explain 查看，Join Operator 中的 condition map 都是 Left Semi Join）
 
 * left join 的左表不能做为 mapjoin 的广播表（此种情况左表再小也无法走 mapjoin）
+
+## 1.5、计算
+
+* 分母为0处理
+
+* 禁止重复计算：使用临时表封装重复计算的逻辑
